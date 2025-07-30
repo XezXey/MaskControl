@@ -77,27 +77,22 @@ def get_lora_mask(x_start, mask, pose_rep='rot6d', mask_type='root'):
 
 def save_to_visualizer(data_dict, save_dir, out_name):
     motions = data_dict["motion"]
+    condition_trajectory = data_dict.get("condition_trajectory", np.zeros_like(motions))
+    condition_mask = data_dict.get("condition_mask", np.zeros_like(motions))
+    
     if "text" in data_dict:
         texts = data_dict["text"]
     else:
         texts = [""] * len(data_dict["motion"])
+        
     
     B, J, D, L = motions.shape   # B x 22 x 3 x T
-    
-    R = np.eye(3)[None, None, ...].repeat(B, axis=0).repeat(L, axis=1)    # B x T x 3 x 3
-    E = np.eye(4)[None, None, ...].repeat(B, axis=0).repeat(L, axis=1)    # B x T x 4 x 4
-    T = np.zeros((B, L, 3))    # B x T x 3
-    camera_center = np.zeros((B, 2))    # B x 2
-    focal_length = np.ones((B, 1))    # B x 1
 
-    out = {'motions': motions.astype(np.float64).tolist(), # B x 22 x 3 x T
-        'R': R.tolist(), # B x T x 3 x 3
-        'Rinv': np.linalg.inv(R).tolist(), # B x T x 3 x 3
-        'T': T.tolist(), # B x T x 3
-        'E': E.tolist(), # B x T x 4 x 4
-        'camera_center': camera_center.tolist(), # B x 2
-        'focal_length': focal_length.tolist(), # B x 1
+    out = {
+        'motions': motions.astype(np.float64).tolist(), # B x 22 x 3 x T
         'prompts': texts, # B
+        'condition_trajectory': condition_trajectory.astype(np.float64).tolist(), # B x T x 22 x 3'
+        'condition_mask': condition_mask.astype(np.bool).tolist(),  # B x T x 22
         }
         
     os.makedirs(save_dir, exist_ok=True)

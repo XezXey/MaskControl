@@ -19,6 +19,23 @@
             "console": "integratedTerminal",
             "cwd": "/home/mint/Dev/CR7/human_motions/MaskControl/",
             "justMyCode": true
+        },
+        {
+            "name": "ControlMM - mimic joint",
+            "type": "debugpy",
+            "request": "launch",
+            "env": {"CUDA_VISIBLE_DEVICES":"0", "WANDB_MODE":"offline"},
+            "module": "generation.mimic_joint",
+            "args": [
+                "--path_name", "./output/control4",
+                "--iter_each", "100",
+                "--iter_last", "600",
+                "--target_motion", "/home/mint/Dev/CR7/human_motions/LoRA-MDM/my_scripts/prepare_training_data/data_for_lora/new_joints/demo_cr7_2.npy",
+                "--overwrite"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "/home/mint/Dev/CR7/human_motions/MaskControl/",
+            "justMyCode": true
         }
     ]
 }

@@ -4,7 +4,7 @@ from generation.load_model import get_models
 
 import numpy as np
 import torch
-from utils.trajectory_plot import draw_circle_with_waves, draw_circle_with_waves2
+from utils.trajectory_plot import draw_circle_with_waves, draw_circle_with_waves2, draw_straight_line
 from exit.utils import visualize_2motions
 from utils.mint import convert_ControlMM_to_3d, save_to_visualizer
 import os
@@ -19,6 +19,7 @@ parser.add_argument('--out_name', type=str, default='mask_control_out.json', hel
 parser.add_argument('--postfix', type=str, default='', help='postfix for the output file name')
 parser.add_argument('--overwrite', action='store_true', help='overwrite existing files', default=False)
 parser.add_argument('--show', action='store_true', help='auto run html') 
+parser.add_argument('--target_motion', type=str, required=True, help='path to input motion file')
 args = parser.parse_args()
 
 os.makedirs(f'{args.path_name}/source', mode=os.umask(0), exist_ok=args.overwrite)
@@ -29,22 +30,33 @@ opt = argparse.Namespace(**opt)
 
 # moments = [mean, std] each has shape [1, 263]
 ct2m_transformer, vq_model, res_model, moment = get_models(opt)
-steps = 196  # Define the number of steps for the motion generation
-traj1 = draw_circle_with_waves(steps=steps)
-traj2 = draw_circle_with_waves2(steps=steps)
+traj1 = draw_circle_with_waves()
+traj2 = draw_circle_with_waves2()
 
-clip_text = ['a person walks in a circle counter-clockwise']
-# clip_text = ['a person fastly walks in a circle counter-clockwise']
-# clip_text = ['a person walks in a circle']
-# clip_text = ['a person jumps in a circle']
+clip_text = ['a person walks then jumps']
+
 # m_length = torch.tensor([196, 196, 196]).cuda()
-m_length = torch.tensor([steps]).cuda()
+m_length = torch.tensor([196]).cuda()
 
 k=0
+# global_joint = torch.zeros((m_length.shape[0], 196, 22, 3), device=m_length.device) # B x T x 22 x 3
 global_joint = torch.zeros((m_length.shape[0], m_length[k], 22, 3), device=m_length.device) # B x T x 22 x 3
-global_joint[k, :, 0] = traj1
-global_joint[k, :, 20] = traj2
-global_joint_mask = (global_joint.sum(-1) != 0)
+target_motion = np.load(args.target_motion)  # Load input motion from file
+target_motion = torch.tensor(target_motion, dtype=torch.float32).to(m_length.device)
+target_motion = target_motion[None, :m_length[k], :, :]  # Ensure shape is B x T x J x D
+
+# global_joint[k, :, 0] = traj1
+# global_joint[k, :, 20] = traj2
+if target_motion.shape[1] < m_length[k]:
+    global_joint[k, :target_motion.shape[1], :, :] = target_motion[k, :, :, :]
+else:
+    global_joint[k, :m_length[k]] = target_motion[k, :m_length[k]]
+
+traj = draw_straight_line(step_length=0.01) # T x 3
+# global_joint[k, :m_length[k], 0, 0] += traj[:m_length[k], 0]  # Set x-coordinates of the first joint
+# global_joint[k, :m_length[k], 0, 2] += traj[:m_length[k], 2]  # Set z-coordinates of the first joint
+global_joint_mask = (global_joint.sum(-1) != 0) # B x T x 22    # True is edited, False is not edited
+global_joint_mask[k, :m_length[k], 0] = False  # Ensure the first joint is always considered edited
 
 print(' Optimizing...')
 # pred_motions_denorm = B x 196 x 22 x 3
@@ -85,6 +97,7 @@ data_dict = {
     'motion': pred_motions_3d[None].transpose(0, 2, 3, 1),    # B x T x 22 x 3 -> B x 22 x 3 x T
     'text': clip_text,
     'condition_trajectory': global_joint[k][:m_length[k]].detach().cpu().numpy()[None],   # B x T x 22 x 3
+    'condition_mask': global_joint_mask[k][:m_length[k]].detach().cpu().numpy()[None],  # B x T x 22
 }
 out_name = f'{args.out_name}.json' if not args.postfix else f'{args.out_name}_{args.postfix}.json'
 save_to_visualizer(data_dict, save_dir=args.save_to_visualizer, out_name=out_name)

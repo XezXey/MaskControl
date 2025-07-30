@@ -8,6 +8,7 @@ import copy
 from models.mask_transformer.transformer import OutputProcess_Bert
 from random import random 
 from einops import rearrange, repeat
+import tqdm
 from utils.metrics import control_joint_ids
 from utils.motion_process import recover_from_ric
 from utils.metrics import control_joint_ids, joints_by_part
@@ -678,7 +679,7 @@ class ControlTransformer(MaskTransformer):
             emb.requires_grad = True
             optimizer = torch.optim.AdamW([emb], lr=control_opt['lr'], betas=(0.5, 0.9), weight_decay=1e-6) #  + list(trans.parameters()) + list(vq_model.parameters())
 
-            for i in range(control_opt['iter']):
+            for i in tqdm.tqdm(range(control_opt['iter'])):
                 pred_motions, pred_motions_denorm = self.forward_predmotion(emb)
 
                 if global_joint[global_joint_mask].sum() != 0:
