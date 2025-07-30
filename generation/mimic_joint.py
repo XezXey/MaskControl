@@ -44,6 +44,7 @@ global_joint = torch.zeros((m_length.shape[0], m_length[k], 22, 3), device=m_len
 target_motion = np.load(args.target_motion)  # Load input motion from file
 target_motion = torch.tensor(target_motion, dtype=torch.float32).to(m_length.device)
 target_motion = target_motion[None, :m_length[k], :, :]  # Ensure shape is B x T x J x D
+target_motion_length = [target_motion.shape[1]]
 
 # global_joint[k, :, 0] = traj1
 # global_joint[k, :, 20] = traj2
@@ -56,7 +57,7 @@ traj = draw_straight_line(step_length=0.01) # T x 3
 # global_joint[k, :m_length[k], 0, 0] += traj[:m_length[k], 0]  # Set x-coordinates of the first joint
 # global_joint[k, :m_length[k], 0, 2] += traj[:m_length[k], 2]  # Set z-coordinates of the first joint
 traj = traj[:, None, :]
-global_joint[k, :m_length[k]] += traj[:m_length[k]]  # Set z-coordinates of the first joint
+global_joint[k, :target_motion_length[k]] += traj[:target_motion_length[k]]  # Set z-coordinates of the first joint
 global_joint_mask = (global_joint.sum(-1) != 0) # B x T x 22    # True is edited, False is not edited
 # global_joint_mask[k, :m_length[k], 0] = False  # Ensure the first joint is always considered edited
 

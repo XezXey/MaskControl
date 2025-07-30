@@ -114,7 +114,7 @@ def draw_circle_with_waves2(steps=196):
 def draw_straight_line(step_length=.01):
     # T x 3
     # start_coord=(0.34,1.25,0.26)
-    start_coord=(0, 1.25, 0)
+    start_coord=(0, 0, 0)
     steps=196
     x0, y0, z0 = start_coord
     x_values = np.linspace(x0, x0 + step_length * steps, steps)
