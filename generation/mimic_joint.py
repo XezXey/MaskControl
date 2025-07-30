@@ -55,8 +55,10 @@ else:
 traj = draw_straight_line(step_length=0.01) # T x 3
 # global_joint[k, :m_length[k], 0, 0] += traj[:m_length[k], 0]  # Set x-coordinates of the first joint
 # global_joint[k, :m_length[k], 0, 2] += traj[:m_length[k], 2]  # Set z-coordinates of the first joint
+traj = traj[:, None, :]
+global_joint[k, :m_length[k]] += traj[:m_length[k]]  # Set z-coordinates of the first joint
 global_joint_mask = (global_joint.sum(-1) != 0) # B x T x 22    # True is edited, False is not edited
-global_joint_mask[k, :m_length[k], 0] = False  # Ensure the first joint is always considered edited
+# global_joint_mask[k, :m_length[k], 0] = False  # Ensure the first joint is always considered edited
 
 print(' Optimizing...')
 # pred_motions_denorm = B x 196 x 22 x 3

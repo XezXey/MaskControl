@@ -33,10 +33,11 @@ steps = 196  # Define the number of steps for the motion generation
 traj1 = draw_circle_with_waves(steps=steps)
 traj2 = draw_circle_with_waves2(steps=steps)
 
-clip_text = ['a person walks in a circle counter-clockwise']
+# clip_text = ['a person walks in a circle counter-clockwise']
+# clip_text = ['a person runs in a circle counter-clockwise']
 # clip_text = ['a person fastly walks in a circle counter-clockwise']
 # clip_text = ['a person walks in a circle']
-# clip_text = ['a person jumps in a circle']
+clip_text = ['a person walks backward in a circle counter-clockwise']
 # m_length = torch.tensor([196, 196, 196]).cuda()
 m_length = torch.tensor([steps]).cuda()
 
@@ -85,6 +86,7 @@ data_dict = {
     'motion': pred_motions_3d[None].transpose(0, 2, 3, 1),    # B x T x 22 x 3 -> B x 22 x 3 x T
     'text': clip_text,
     'condition_trajectory': global_joint[k][:m_length[k]].detach().cpu().numpy()[None],   # B x T x 22 x 3
+    'condition_mask': global_joint_mask[k][:m_length[k]].detach().cpu().numpy()[None],  # B x T x 22
 }
 out_name = f'{args.out_name}.json' if not args.postfix else f'{args.out_name}_{args.postfix}.json'
 save_to_visualizer(data_dict, save_dir=args.save_to_visualizer, out_name=out_name)
